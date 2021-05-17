@@ -11,11 +11,15 @@ CREATE TABLE `users` (
   `email` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password_hash` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phone` bigint(20) unsigned DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NOW(),
+  `updated_at` DATETIME DEFAULT NOW(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `phone` (`phone`),
   KEY `users_firstname_lastname_idx` (`firstname`,`lastname`)
 ) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `email`, `password_hash`, `phone`) VALUES ('101', 'Tressa', 'Runte', 'carey59@example.net', 'ea00ef2f329b92d18b7f961ac00f6784343198fc', '5617135564');
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `email`, `password_hash`, `phone`) VALUES ('102', 'Alicia', 'Hansen', 'grant.jerde@example.org', '162904b082a83539e6c2241e8af30526150aa43b', '30');
@@ -81,7 +85,7 @@ CREATE TABLE `profiles` (
   `gender` char(1) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `birthday` date DEFAULT NULL,
   `photo_id` bigint(20) unsigned DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
+  `created_at` datetime DEFAULT NOW(),
   `hometown` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE
@@ -156,17 +160,17 @@ CREATE TABLE profile_likes (
 	target_user_id BIGINT UNSIGNED NOT NULL,
 	created_at DATETIME DEFAULT NOW(),
 	updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
-	
+
 	FOREIGN KEY (initiator_user_id) REFERENCES users(id),
 	FOREIGN KEY (target_user_id) REFERENCES users(id)
 );
-	
+
 DROP TABLE IF EXISTS communities;
 CREATE TABLE communities (
 	id SERIAL,
 	name VARCHAR(150),
 	admin_user_id BIGINT UNSIGNED NOT NULL,
-	
+
 	INDEX communities_name_idx(name),
 	FOREIGN KEY (admin_user_id) REFERENCES users(id)
 );
@@ -175,7 +179,7 @@ DROP TABLE IF EXISTS users_communities;
 CREATE TABLE users_communities(
 	user_id BIGINT UNSIGNED NOT NULL,
 	community_id BIGINT UNSIGNED NOT NULL,
-	
+
 	PRIMARY KEY (user_id, community_id),
 	FOREIGN KEY (user_id) REFERENCES users(id),
 	FOREIGN KEY (community_id) REFERENCES communities(id)
@@ -188,8 +192,9 @@ CREATE TABLE friend_requests (
 	`status` ENUM('requested', 'approved', 'declined', 'unfriended'),
 	-- `status` TYNYINT(1) UNSIGNED, -- в этом случае в коде хранили бы циферный enum (0, 1, 2, 3...)
 	requested_at DATETIME DEFAULT NOW(),
-	udated_at DATETIME ON UPDATE CURRENT_TIMESTAMP, -- можно будет даже не упоминать это поле при обновлении
-	
+	updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP, -- можно будет даже не упоминать это поле при обновлении
+	confirmed_at DATETIME DEFAULT NOW(),
+
 	PRIMARY KEY (initiator_user_id, target_user_id),
 	FOREIGN KEY (initiator_user_id) REFERENCES users(id),
 	FOREIGN KEY (target_user_id) REFERENCES users(id),
@@ -338,7 +343,7 @@ CREATE TABLE media (
 	metadata JSON,
 	created_at DATETIME DEFAULT NOW(),
 	updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
-	
+
 	FOREIGN KEY (user_id) REFERENCES users(id),
 	FOREIGN KEY (media_type_id) REFERENCES media_types(id)
 );
@@ -348,7 +353,7 @@ CREATE TABLE photo_albums (
 	id SERIAL,
 	name VARCHAR(255) DEFAULT NULL,
 	user_id BIGINT UNSIGNED DEFAULT NULL,
-	
+
 	FOREIGN KEY (user_id) REFERENCES users(id),
 	PRIMARY KEY (id)
 );
@@ -358,7 +363,7 @@ CREATE TABLE photos (
 	id SERIAL,
 	album_id BIGINT UNSIGNED NOT NULL,
 	media_id BIGINT UNSIGNED NOT NULL,
-	
+
 	FOREIGN KEY (album_id) REFERENCES photo_albums(id),
 	FOREIGN KEY (media_id) REFERENCES media(id)
 );
@@ -369,7 +374,7 @@ CREATE TABLE media_likes (
 	user_id BIGINT UNSIGNED NOT NULL,
 	media_id BIGINT UNSIGNED NOT NULL,
 	created_at DATETIME DEFAULT NOW(),
-	
+
 	FOREIGN KEY (user_id) REFERENCES users(id),
 	FOREIGN KEY (media_id) REFERENCES media(id)
 );
@@ -498,7 +503,36 @@ CREATE TABLE posts_likes (
 	user_id BIGINT UNSIGNED NOT NULL,
 	post_id BIGINT UNSIGNED NOT NULL,
 	liked_at DATETIME DEFAULT NOW(),
-	
+
 	FOREIGN KEY (user_id) REFERENCES users(id),
 	FOREIGN KEY (post_id) REFERENCES posts(id)
 );
+
+UPDATE friend_requests
+SET
+    status = 'declined',
+    confirmed_at = now()
+WHERE
+      initiator_user_id = 101 and target_user_id = 103
+      and status = 'requested';
+
+DELETE FROM messages
+WHERE from_user_id = 101 or to_user_id = 101;
+
+TRUNCATE table messages;
+
+SELECT 10+20;
+SELECT DISTINCT  firstname, lastname
+FROM users;
+
+SELECT *
+FROM users
+LIMIT 1;
+
+SELECT *
+FROM users
+WHERE id = 105 OR firstname = 'Eryn';
+
+SELECT *
+FROM users
+WHERE id IN (101, 102, 130, 104);
